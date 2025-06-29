@@ -40,8 +40,8 @@ func (b *Bot) handleMySubscriptions(c telebot.Context) error {
 			status = " ⚠️"
 		}
 
-		text += fmt.Sprintf("• %s - %.2f%s%s\n  📅 Следующий платеж: %s\n\n",
-			sub.Name, sub.Cost, currencySymbol, status, sub.NextPayment.Format("02.01.2006"))
+		text += fmt.Sprintf("• %s - %s%s%s\n  📅 Следующий платеж: %s\n\n",
+			sub.Name, sub.Cost.String(), currencySymbol, status, sub.NextPayment.Format("02.01.2006"))
 
 		// Create action buttons for each subscription
 		payBtn := telebot.InlineButton{
@@ -52,6 +52,10 @@ func (b *Bot) handleMySubscriptions(c telebot.Context) error {
 			Unique: fmt.Sprintf("delete_%d", sub.ID),
 			Text:   fmt.Sprintf("❌ Удалить %s", sub.Name),
 		}
+		
+		// Register handlers for these specific buttons
+		b.bot.Handle(&payBtn, b.handlePaySubscription)
+		b.bot.Handle(&deleteBtn, b.handleDeleteSubscription)
 
 		keyboard = append(keyboard, []telebot.InlineButton{payBtn})
 		keyboard = append(keyboard, []telebot.InlineButton{deleteBtn})
@@ -90,10 +94,10 @@ func (b *Bot) handlePaySubscription(c telebot.Context) error {
 
 	text := fmt.Sprintf("✅ *Платеж отмечен!*\n\n"+
 		"📝 Подписка: %s\n"+
-		"💰 Сумма: %.2f%s\n"+
+		"💰 Сумма: %s%s\n"+
 		"📅 Следующий платеж: %s",
 		subscription.Name,
-		subscription.Cost, currencySymbol,
+		subscription.Cost.String(), currencySymbol,
 		subscription.NextPayment.Format("02.01.2006"))
 
 	return c.Edit(text, &telebot.ReplyMarkup{
@@ -163,7 +167,7 @@ func (b *Bot) handleMonthlyExpense(c telebot.Context) error {
 			if expense.Currency == models.CurrencyRUB {
 				currencySymbol = "₽"
 			}
-			text += fmt.Sprintf("• %.2f%s (%d платежей)\n", expense.TotalAmount, currencySymbol, expense.Count)
+			text += fmt.Sprintf("• %s%s (%d платежей)\n", expense.TotalAmount.String(), currencySymbol, expense.Count)
 		}
 		text += "\n"
 	}
@@ -178,7 +182,7 @@ func (b *Bot) handleMonthlyExpense(c telebot.Context) error {
 			if currency == models.CurrencyRUB {
 				currencySymbol = "₽"
 			}
-			text += fmt.Sprintf("• %.2f%s в месяц\n", amount, currencySymbol)
+			text += fmt.Sprintf("• %s%s в месяц\n", amount.String(), currencySymbol)
 		}
 	}
 
@@ -208,7 +212,7 @@ func (b *Bot) handleAnalytics(c telebot.Context) error {
 				if summary.Currency == models.CurrencyRUB {
 					currencySymbol = "₽"
 				}
-				text += fmt.Sprintf("  %.2f%s (%d платежей)\n", summary.TotalAmount, currencySymbol, summary.Count)
+				text += fmt.Sprintf("  %s%s (%d платежей)\n", summary.TotalAmount.String(), currencySymbol, summary.Count)
 			}
 			text += "\n"
 		}
@@ -247,8 +251,8 @@ func (b *Bot) handleHistory(c telebot.Context) error {
 				statusIcon = "❌"
 			}
 			
-			text += fmt.Sprintf("%s %.2f%s - %s\n",
-				statusIcon, payment.Amount, currencySymbol, payment.PaidAt.Format("02.01.2006 15:04"))
+			text += fmt.Sprintf("%s %s%s - %s\n",
+				statusIcon, payment.Amount.String(), currencySymbol, payment.PaidAt.Format("02.01.2006 15:04"))
 		}
 	}
 

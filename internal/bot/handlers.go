@@ -11,6 +11,11 @@ import (
 	"gopkg.in/telebot.v3"
 )
 
+func (b *Bot) setupDynamicHandlers() {
+	// For now, let's not register a catch-all handler to avoid conflicts
+	// We'll handle dynamic buttons differently
+}
+
 func (b *Bot) setupHandlers() {
 	// Start command
 	b.bot.Handle("/start", b.handleStart)
@@ -50,8 +55,8 @@ func (b *Bot) setupHandlers() {
 	// Text message handler for states
 	b.bot.Handle(telebot.OnText, b.handleTextMessage)
 	
-	// Callback query handler for dynamic callbacks
-	b.bot.Handle(telebot.OnCallback, b.handleCallbackQuery)
+	// Register dynamic callback handlers after specific ones
+	b.setupDynamicHandlers()
 }
 
 func (b *Bot) handleStart(c telebot.Context) error {
@@ -68,8 +73,11 @@ func (b *Bot) showMainMenu(c telebot.Context) error {
 
 func (b *Bot) handleAddSubscription(c telebot.Context) error {
 	userID := c.Sender().ID
-	b.clearUserState(userID)
-	b.setState(userID, StateAddingSubscription)
+	// Reset state but keep any existing data clean
+	b.userStates[userID] = &UserState{
+		State: StateAddingSubscription,
+		Data:  make(map[string]interface{}),
+	}
 	
 	text := "📝 *Добавление новой подписки*\n\nВыберите категорию:"
 	
@@ -185,6 +193,7 @@ func (b *Bot) handleAutoRenewalSelection(c telebot.Context) error {
 	
 	category := b.getData(userID, "category").(models.Category)
 	currency := b.getData(userID, "currency").(models.Currency)
+	
 	periodDays := b.getData(userID, "period_days").(int)
 	
 	currencyText := ""
@@ -254,8 +263,8 @@ func (b *Bot) handleCostInput(c telebot.Context) error {
 	userID := c.Sender().ID
 	costStr := strings.TrimSpace(c.Text())
 	
-	cost, err := strconv.ParseFloat(costStr, 64)
-	if err != nil || cost <= 0 {
+	cost, err := models.ParseMoney(costStr)
+	if err != nil || !cost.IsPositive() {
 		return c.Send("❌ Некорректная стоимость. Введите число больше 0 (например: 15.99):")
 	}
 	
@@ -307,7 +316,7 @@ func (b *Bot) createSubscription(c telebot.Context) error {
 	if costData == nil {
 		return c.Send("❌ Ошибка: данные о стоимости отсутствуют")
 	}
-	cost := costData.(float64)
+	cost := costData.(models.Money)
 	
 	currencyData := b.getData(userID, "currency")
 	if currencyData == nil {
@@ -374,13 +383,13 @@ func (b *Bot) createSubscription(c telebot.Context) error {
 	
 	text := fmt.Sprintf("✅ *Подписка успешно добавлена!*\n\n"+
 		"📝 Название: %s\n"+
-		"💰 Стоимость: %.2f%s\n"+
+		"💰 Стоимость: %s%s\n"+
 		"📅 Период: каждые %s\n"+
 		"🗓️ Следующий платеж: %s\n"+
 		"📂 Категория: %s\n"+
 		"🔄 Автопродление: %s",
 		subscription.Name,
-		subscription.Cost, currencySymbol,
+		subscription.Cost.String(), currencySymbol,
 		periodText,
 		subscription.NextPayment.Format("02.01.2006"),
 		getCategoryEmoji(category),
@@ -395,20 +404,6 @@ func (b *Bot) handleBack(c telebot.Context) error {
 	userID := c.Sender().ID
 	b.clearUserState(userID)
 	return b.showMainMenu(c)
-}
-
-func (b *Bot) handleCallbackQuery(c telebot.Context) error {
-	data := c.Data()
-	
-	// Handle subscription actions
-	if strings.HasPrefix(data, "pay_") {
-		return b.handlePaySubscription(c)
-	}
-	if strings.HasPrefix(data, "delete_") {
-		return b.handleDeleteSubscription(c)
-	}
-	
-	return nil
 }
 
 func getCategoryEmoji(category models.Category) string {

@@ -24,7 +24,7 @@ const (
 type Subscription struct {
 	ID          int       `json:"id"`
 	Name        string    `json:"name"`
-	Cost        float64   `json:"cost"`
+	Cost        Money     `json:"cost"`
 	Currency    Currency  `json:"currency"`
 	PeriodDays  int       `json:"period_days"`
 	NextPayment time.Time `json:"next_payment"`
@@ -37,7 +37,7 @@ type Subscription struct {
 
 type CreateSubscriptionRequest struct {
 	Name        string    `json:"name"`
-	Cost        float64   `json:"cost"`
+	Cost        Money     `json:"cost"`
 	Currency    Currency  `json:"currency"`
 	PeriodDays  int       `json:"period_days"`
 	NextPayment time.Time `json:"next_payment"`

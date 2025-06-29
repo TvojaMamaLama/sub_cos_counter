@@ -15,7 +15,7 @@ const (
 type Payment struct {
 	ID             int           `json:"id"`
 	SubscriptionID int           `json:"subscription_id"`
-	Amount         float64       `json:"amount"`
+	Amount         Money         `json:"amount"`
 	Currency       Currency      `json:"currency"`
 	PaidAt         time.Time     `json:"paid_at"`
 	Status         PaymentStatus `json:"status"`
@@ -24,14 +24,14 @@ type Payment struct {
 
 type CreatePaymentRequest struct {
 	SubscriptionID int           `json:"subscription_id"`
-	Amount         float64       `json:"amount"`
+	Amount         Money         `json:"amount"`
 	Currency       Currency      `json:"currency"`
 	Status         PaymentStatus `json:"status"`
 }
 
 type PaymentSummary struct {
 	Currency    Currency `json:"currency"`
-	TotalAmount float64  `json:"total_amount"`
+	TotalAmount Money    `json:"total_amount"`
 	Count       int      `json:"count"`
 }
 
