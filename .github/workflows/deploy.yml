@@ -99,17 +99,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Check deployment readiness
-      run: |
-        if [ -z "${{ secrets.SERVER_HOST }}" ]; then
-          echo "⚠️ SERVER_HOST secret not configured. Deployment will be skipped."
-          echo "Configure deployment secrets as described in CICD_SETUP.md to enable auto-deployment"
-        else
-          echo "✅ Deployment secrets configured. Proceeding with deployment..."
-        fi
-    
     - name: Deploy to production
-      if: ${{ secrets.SERVER_HOST != '' }}
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.SERVER_HOST }}
@@ -178,13 +168,7 @@ jobs:
       run: |
         if [ "${{ needs.deploy.result }}" == "success" ]; then
           echo "🎉 Deployment successful!"
-        elif [ "${{ needs.deploy.result }}" == "skipped" ]; then
-          echo "⚠️ Deployment skipped - secrets not configured"
-          echo "Configure deployment secrets as described in CICD_SETUP.md to enable auto-deployment"
-        elif [ "${{ needs.build.result }}" == "success" ]; then
-          echo "✅ Build successful! Docker image published to registry"
-          echo "Configure deployment secrets to enable auto-deployment"
         else
-          echo "❌ Build or deployment failed!"
+          echo "❌ Deployment failed!"
           exit 1
         fi
