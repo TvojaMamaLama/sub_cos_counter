@@ -122,59 +122,21 @@ jobs:
           DATABASE_CONN_MAX_LIFETIME=60
           ENVEOF
           
-          # Install Docker and Docker Compose if not installed
-          if ! command -v docker &> /dev/null; then
-            echo "Installing Docker..."
-            apt-get update
-            apt-get install -y ca-certificates curl
-            curl -fsSL https://get.docker.com -o get-docker.sh
-            sh get-docker.sh
-            systemctl start docker
-            systemctl enable docker
-            usermod -aG docker root
-          fi
-          
-          if ! command -v docker-compose &> /dev/null && [ ! -f /usr/local/bin/docker-compose ]; then
-            echo "Installing Docker Compose..."
-            
-            # Try installing via curl first
-            if curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose; then
-              chmod +x /usr/local/bin/docker-compose
-              echo "Docker Compose installed via curl"
-            else
-              # Fallback to apt installation
-              echo "curl failed, trying apt installation..."
-              apt-get update
-              apt-get install -y docker-compose-plugin
-              # Create alias for docker-compose command
-              echo '#!/bin/bash' > /usr/local/bin/docker-compose
-              echo 'docker compose "$@"' >> /usr/local/bin/docker-compose
-              chmod +x /usr/local/bin/docker-compose
-            fi
-            
-            # Create symlink for easier access
-            ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
-            # Update PATH for current session
-            export PATH="/usr/local/bin:$PATH"
-          fi
+          # Install Docker and Docker Compose via apt (simple!)
+          echo "Installing Docker and Docker Compose via apt..."
+          apt-get update
+          apt-get install -y docker.io docker-compose
+          systemctl start docker
+          systemctl enable docker
           
           # Verify installations
           echo "Docker version:"
           docker --version
           
-          # Check if docker-compose is available
-          if [ -f /usr/local/bin/docker-compose ]; then
-            echo "Docker Compose found at /usr/local/bin/docker-compose"
-            /usr/local/bin/docker-compose --version
-            DOCKER_COMPOSE="/usr/local/bin/docker-compose"
-          elif command -v docker-compose &> /dev/null; then
-            echo "Docker Compose found in PATH"
-            docker-compose --version
-            DOCKER_COMPOSE="docker-compose"
-          else
-            echo "ERROR: Docker Compose not found!"
-            exit 1
-          fi
+          # Use simple docker-compose command
+          echo "Docker Compose version:"
+          docker-compose --version
+          DOCKER_COMPOSE="docker-compose"
           
           # Stop existing containers
           $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml --env-file .env down || true

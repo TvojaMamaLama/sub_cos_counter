@@ -1,0 +1,48 @@
+name: Health Check Production
+
+on:
+  workflow_dispatch:  # Manual trigger
+  schedule:
+    - cron: '0 */6 * * *'  # Run every 6 hours
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+    
+    - name: Run Health Check
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          cd /opt/subscription-bot
+          chmod +x deployment/scripts/health-check.sh
+          ./deployment/scripts/health-check.sh
+        EOF
+    
+    - name: Quick Status Check
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          echo "=== QUICK STATUS ==="
+          cd /opt/subscription-bot
+          
+          # Container status
+          echo "Containers:"
+          docker-compose -f deployment/docker/docker-compose.yml ps --format "table"
+          
+          # Recent logs
+          echo -e "\nRecent bot logs:"
+          docker-compose -f deployment/docker/docker-compose.yml logs --tail=5 bot
+          
+          # System resources
+          echo -e "\nSystem resources:"
+          echo "Memory: $(free -h | grep '^Mem:' | awk '{print $3 "/" $2}')"
+          echo "Disk: $(df -h /opt | tail -1 | awk '{print $3 "/" $2 " (" $5 " used)"}')"
+          echo "Load: $(uptime | awk -F'load average:' '{print $2}')"
+        EOF
