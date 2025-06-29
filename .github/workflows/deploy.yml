@@ -13,82 +13,31 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Set up Go
-      uses: actions/setup-go@v4
+    - uses: actions/setup-go@v4
       with:
         go-version: '1.24'
-    
-    - name: Cache Go modules
-      uses: actions/cache@v3
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    
-    - name: Download dependencies
-      run: go mod download
-    
-    - name: Run tests
-      run: go test -v ./...
-    
-    - name: Run go vet
-      run: go vet ./...
-    
-    - name: Check formatting
-      run: |
-        if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
-          echo "The following files are not formatted:"
-          gofmt -s -l .
-          exit 1
-        fi
+    - run: go test ./...
 
   build:
     runs-on: ubuntu-latest
     needs: test
     permissions:
-      contents: read
       packages: write
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-    
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
+    - uses: actions/checkout@v4
+    - uses: docker/login-action@v3
       with:
-        registry: ${{ env.REGISTRY }}
+        registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        tags: |
-          type=ref,event=branch
-          type=ref,event=pr
-          type=sha,prefix={{branch}}-
-          type=raw,value=latest,enable={{is_default_branch}}
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+    - uses: docker/build-push-action@v5
       with:
         context: .
         file: deployment/docker/Dockerfile
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        tags: ghcr.io/${{ github.repository }}:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -107,68 +56,15 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.DEPLOY_PORT || 22 }}
         script: |
-          # Navigate to application directory
-          cd ${{ secrets.DEPLOY_PATH || '/opt/subscription-bot' }}
-          
-          # Pull latest code
+          cd /opt/subscription-bot
           git pull origin main
-          
-          # Login to GitHub Container Registry
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          
-          # Pull latest image
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          
-          # Stop existing containers gracefully
-          docker-compose -f deployment/docker/docker-compose.yml -f deployment/docker/docker-compose.prod.yml down --remove-orphans || true
-          
-          # Force remove conflicting containers if they exist
-          docker rm -f subscription-bot-db subscription-bot subscription-bot-atlas 2>/dev/null || true
-          
-          # Remove conflicting networks
-          docker network rm docker_subscription-bot-network 2>/dev/null || true
-          
-          # Create production docker-compose override to use registry image
+          docker pull ghcr.io/${{ github.repository }}:latest
+          docker-compose -f deployment/docker/docker-compose.yml down || true
           cat > deployment/docker/docker-compose.registry.yml << EOF
           services:
             bot:
-              image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+              image: ghcr.io/${{ github.repository }}:latest
               build: null
           EOF
-          
-          # Start services with registry image
-          docker-compose -f deployment/docker/docker-compose.yml -f deployment/docker/docker-compose.prod.yml -f deployment/docker/docker-compose.registry.yml up -d
-          
-          # Wait for database to be ready
-          sleep 15
-          
-          # Run migrations
-          docker-compose -f deployment/docker/docker-compose.yml --profile migration run --rm atlas || echo "Migration completed or no changes"
-          
-          # Health check
-          sleep 10
-          docker-compose -f deployment/docker/docker-compose.yml ps
-          
-          # Show recent logs
-          echo "Recent bot logs:"
-          docker-compose -f deployment/docker/docker-compose.yml logs --tail=20 bot
-          
-          # Clean up old images
-          docker image prune -f
-          
-          echo "✅ Deployment completed successfully!"
-
-  notify:
-    runs-on: ubuntu-latest
-    needs: [test, build, deploy]
-    if: always() && github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Notify deployment status
-      run: |
-        if [ "${{ needs.deploy.result }}" == "success" ]; then
-          echo "🎉 Deployment successful!"
-        else
-          echo "❌ Deployment failed!"
-          exit 1
-        fi
+          docker-compose -f deployment/docker/docker-compose.yml -f deployment/docker/docker-compose.registry.yml up -d
