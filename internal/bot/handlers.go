@@ -68,8 +68,8 @@ func (b *Bot) showMainMenu(c telebot.Context) error {
 
 func (b *Bot) handleAddSubscription(c telebot.Context) error {
 	userID := c.Sender().ID
-	b.setState(userID, StateAddingSubscription)
 	b.clearUserState(userID)
+	b.setState(userID, StateAddingSubscription)
 	
 	text := "📝 *Добавление новой подписки*\n\nВыберите категорию:"
 	
@@ -296,12 +296,42 @@ func (b *Bot) handleDateInput(c telebot.Context) error {
 func (b *Bot) createSubscription(c telebot.Context) error {
 	userID := c.Sender().ID
 	
-	name := b.getData(userID, "name").(string)
-	cost := b.getData(userID, "cost").(float64)
-	currency := b.getData(userID, "currency").(models.Currency)
-	category := b.getData(userID, "category").(models.Category)
-	periodDays := b.getData(userID, "period_days").(int)
-	autoRenewal := b.getData(userID, "auto_renewal").(bool)
+	// Safely extract data with validation
+	nameData := b.getData(userID, "name")
+	if nameData == nil {
+		return c.Send("❌ Ошибка: данные о названии отсутствуют")
+	}
+	name := nameData.(string)
+	
+	costData := b.getData(userID, "cost")
+	if costData == nil {
+		return c.Send("❌ Ошибка: данные о стоимости отсутствуют")
+	}
+	cost := costData.(float64)
+	
+	currencyData := b.getData(userID, "currency")
+	if currencyData == nil {
+		return c.Send("❌ Ошибка: данные о валюте отсутствуют")
+	}
+	currency := currencyData.(models.Currency)
+	
+	categoryData := b.getData(userID, "category")
+	if categoryData == nil {
+		return c.Send("❌ Ошибка: данные о категории отсутствуют")
+	}
+	category := categoryData.(models.Category)
+	
+	periodDaysData := b.getData(userID, "period_days")
+	if periodDaysData == nil {
+		return c.Send("❌ Ошибка: данные о периоде отсутствуют")
+	}
+	periodDays := periodDaysData.(int)
+	
+	autoRenewalData := b.getData(userID, "auto_renewal")
+	if autoRenewalData == nil {
+		return c.Send("❌ Ошибка: данные об автопродлении отсутствуют")
+	}
+	autoRenewal := autoRenewalData.(bool)
 	
 	// Set next payment date (starting from today + period)
 	nextPayment := time.Now().AddDate(0, 0, periodDays)
