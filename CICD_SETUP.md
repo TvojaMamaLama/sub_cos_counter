@@ -6,8 +6,10 @@
 
 1. **Test** - запускает тесты Go при каждом push/PR
 2. **Build** - собирает Docker image и пушит в GitHub Container Registry  
-3. **Deploy** - автоматически разворачивает на продакшн при push в main
+3. **Deploy** - автоматически разворачивает на продакшн при push в main (если настроены секреты)
 4. **Notify** - сообщает о статусе деплоя
+
+**Важно**: Pipeline работает даже без настроенных секретов деплоя - будет выполняться тестирование и сборка образов.
 
 ## Требования для сервера
 
@@ -24,9 +26,9 @@
 
 ```bash
 # Сервер для деплоя
-DEPLOY_HOST=your-server-ip-or-domain
-DEPLOY_USER=root  # или другой пользователь с sudo
-DEPLOY_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
+SERVER_HOST=your-server-ip-or-domain
+SERVER_USER=root  # или другой пользователь с sudo
+SSH_PRIVATE_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
 ...
 -----END OPENSSH PRIVATE KEY-----
 
@@ -37,7 +39,7 @@ DEPLOY_PATH=/opt/subscription-bot  # по умолчанию
 DEPLOY_PORT=22  # по умолчанию
 
 # Telegram Bot Token
-TELEGRAM_BOT_TOKEN=7860783058:AAF8j8NdOPSeHuHLK2pSLs54iG-G52vfmJE
+TELEGRAM_BOT_TOKEN=your-bot-token-here
 
 # База данных
 DATABASE_PASSWORD=your-secure-password
@@ -45,6 +47,8 @@ DATABASE_PASSWORD=your-secure-password
 # Опционально - ограничение доступа к боту
 TELEGRAM_ALLOWED_USER=123456789  # ваш Telegram ID
 ```
+
+**Текущие настроенные секреты**: SERVER_HOST, SERVER_USER, SSH_PRIVATE_KEY, TELEGRAM_BOT_TOKEN, DATABASE_PASSWORD ✅
 
 ## Настройка SSH ключей
 
@@ -64,7 +68,7 @@ ssh-copy-id -i ~/.ssh/deploy_key.pub user@your-server
 
 ```bash
 cat ~/.ssh/deploy_key
-# Скопируйте весь вывод в DEPLOY_SSH_KEY
+# Скопируйте весь вывод в SSH_PRIVATE_KEY
 ```
 
 ## Настройка сервера
