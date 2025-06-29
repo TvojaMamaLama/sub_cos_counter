@@ -1,0 +1,71 @@
+# Production overrides for docker-compose
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  bot:
+    restart: always
+    environment:
+      APP_ENVIRONMENT: production
+      APP_DEBUG: false
+      LOGGING_LEVEL: info
+      LOGGING_FORMAT: json
+      LOGGING_OUTPUT: file
+      LOGGING_FILENAME: /app/logs/bot.log
+    volumes:
+      - ./logs:/app/logs:rw
+      - /etc/localtime:/etc/localtime:ro
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+    # Health check
+    healthcheck:
+      test: ["CMD", "pgrep", "bot"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    restart: always
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+      # Backup location
+      - ./backups:/backups:rw
+    environment:
+      # Production security settings
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+    # Enhanced health check for production
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-postgres} -d ${DATABASE_NAME:-sub_cos_counter}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_prod_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /var/lib/subscription-bot/postgres
+    labels:
+      - "com.subscription-bot.environment=production"

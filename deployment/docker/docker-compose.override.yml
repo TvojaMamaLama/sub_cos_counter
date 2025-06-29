@@ -1,0 +1,33 @@
+# Development overrides for docker-compose
+# This file is automatically loaded by docker-compose
+
+version: '3.8'
+
+services:
+  bot:
+    environment:
+      APP_ENVIRONMENT: development
+      APP_DEBUG: true
+      LOGGING_LEVEL: debug
+      LOGGING_FORMAT: text
+    volumes:
+      # Mount source code for development (hot reload if needed)
+      - ./:/app/src:ro
+    # Override to build locally instead of using cache
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BUILD_ENV=development
+
+  postgres:
+    ports:
+      # Expose postgres on different port in development to avoid conflicts
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: sub_cos_counter_dev
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_dev_data:

@@ -1,0 +1,36 @@
+# Subscription Tracker Bot Configuration
+
+app:
+  name: "Subscription Tracker Bot"
+  version: "1.0.0"
+  environment: "development"  # development, staging, production
+  debug: true
+
+telegram:
+  bot_token: "your_bot_token_here"
+  use_webhook: false
+  webhook_url: ""
+  allowed_user: 0  # Set your Telegram user ID for personal bot
+
+database:
+  # Option 1: Use full URL
+  url: "postgres://username:password@localhost:5432/sub_cos_counter?sslmode=disable"
+  
+  # Option 2: Use separate fields (will build URL automatically)
+  # host: "localhost"
+  # port: 5432
+  # name: "sub_cos_counter"
+  # user: "postgres"
+  # password: "your_password"
+  # ssl_mode: "disable"
+  
+  # Connection pool settings
+  max_connections: 25
+  max_idle_time: 15        # minutes
+  conn_max_lifetime: 60    # minutes
+
+logging:
+  level: "info"           # debug, info, warn, error
+  format: "json"          # json, text
+  output: "stdout"        # stdout, stderr, file
+  filename: ""            # required if output is "file"

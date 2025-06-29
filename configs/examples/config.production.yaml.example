@@ -1,0 +1,38 @@
+# Production configuration example
+
+app:
+  name: "Subscription Tracker Bot"
+  version: "1.0.0"
+  environment: "production"
+  debug: false
+
+telegram:
+  # Use environment variable: TELEGRAM_BOT_TOKEN
+  bot_token: ""
+  use_webhook: true
+  webhook_url: "https://your-domain.com/webhook"
+  allowed_user: 0  # Set your Telegram user ID
+
+database:
+  # Use environment variable: DATABASE_URL (recommended for production)
+  url: ""
+  
+  # Alternative: use separate fields
+  host: "your-db-host"
+  port: 5432
+  name: "sub_cos_counter"
+  user: "your-db-user"
+  # Use environment variable: DATABASE_PASSWORD
+  password: ""
+  ssl_mode: "require"
+  
+  # Production pool settings
+  max_connections: 50
+  max_idle_time: 10
+  conn_max_lifetime: 30
+
+logging:
+  level: "info"
+  format: "json"
+  output: "file"
+  filename: "/var/log/subscription-bot/bot.log"
