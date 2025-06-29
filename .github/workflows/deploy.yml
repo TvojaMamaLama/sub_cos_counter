@@ -134,28 +134,33 @@ jobs:
             usermod -aG docker root
           fi
           
-          if ! command -v docker-compose &> /dev/null; then
+          if ! command -v docker-compose &> /dev/null && [ ! -f /usr/local/bin/docker-compose ]; then
             echo "Installing Docker Compose..."
             curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
             chmod +x /usr/local/bin/docker-compose
             # Create symlink for easier access
             ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+            # Update PATH for current session
+            export PATH="/usr/local/bin:$PATH"
           fi
           
           # Verify installations
           echo "Docker version:"
           docker --version
           echo "Docker Compose version:"
-          docker-compose --version
+          /usr/local/bin/docker-compose --version
+          
+          # Set docker-compose path
+          DOCKER_COMPOSE="/usr/local/bin/docker-compose"
           
           # Stop existing containers
-          docker-compose -f deployment/docker/docker-compose.yml --env-file .env down || true
+          $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml --env-file .env down || true
           
           # Pull latest images and rebuild
-          docker-compose -f deployment/docker/docker-compose.yml --env-file .env build --no-cache
+          $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml --env-file .env build --no-cache
           
           # Start services
-          docker-compose -f deployment/docker/docker-compose.yml --env-file .env up -d
+          $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml --env-file .env up -d
           
           # Wait for database to be ready
           echo "Waiting for database..."
@@ -163,11 +168,11 @@ jobs:
           
           # Check if services are running
           echo "Checking service status..."
-          docker-compose -f deployment/docker/docker-compose.yml ps
+          $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml ps
           
           # Show logs
           echo "Recent logs:"
-          docker-compose -f deployment/docker/docker-compose.yml logs --tail=20
+          $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml logs --tail=20
           
           # Cleanup
           rm -f /tmp/deployment.tar.gz
@@ -180,23 +185,26 @@ jobs:
         ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           cd /opt/subscription-bot
           
+          # Set docker-compose path
+          DOCKER_COMPOSE="/usr/local/bin/docker-compose"
+          
           # Check if containers are running
-          if docker-compose -f deployment/docker/docker-compose.yml ps | grep -q "Up"; then
+          if $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml ps | grep -q "Up"; then
             echo "✅ Deployment verification successful - containers are running"
             
             # Show container status
             echo "Container status:"
-            docker-compose -f deployment/docker/docker-compose.yml ps
+            $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml ps
             
             # Show recent logs
             echo "Recent bot logs:"
-            docker-compose -f deployment/docker/docker-compose.yml logs --tail=10 bot
+            $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml logs --tail=10 bot
           else
             echo "❌ Deployment verification failed - containers are not running"
             echo "Container status:"
-            docker-compose -f deployment/docker/docker-compose.yml ps
+            $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml ps
             echo "Error logs:"
-            docker-compose -f deployment/docker/docker-compose.yml logs --tail=20
+            $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml logs --tail=20
             exit 1
           fi
         EOF
