@@ -62,25 +62,32 @@ func (s *AnalyticsService) GetUpcomingPayments(ctx context.Context, days int) ([
 	return upcoming, nil
 }
 
-func (s *AnalyticsService) GetMonthlyRecurringCost(ctx context.Context) (map[models.Currency]float64, error) {
+func (s *AnalyticsService) GetMonthlyRecurringCost(ctx context.Context) (map[models.Currency]models.Money, error) {
 	subscriptions, err := s.subscriptionRepo.GetAllActive(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	monthlyCosts := make(map[models.Currency]float64)
+	monthlyCosts := make(map[models.Currency]models.Money)
 
 	for _, sub := range subscriptions {
 		// Convert to monthly cost based on period
 		monthlyCost := s.calculateMonthlyCost(sub.Cost, sub.PeriodDays)
-		monthlyCosts[sub.Currency] += monthlyCost
+		if existing, exists := monthlyCosts[sub.Currency]; exists {
+			monthlyCosts[sub.Currency] = existing.Add(monthlyCost)
+		} else {
+			monthlyCosts[sub.Currency] = monthlyCost
+		}
 	}
 
 	return monthlyCosts, nil
 }
 
-func (s *AnalyticsService) calculateMonthlyCost(cost float64, periodDays int) float64 {
-	// Average days in a month
-	avgDaysInMonth := 30.44
-	return cost * (avgDaysInMonth / float64(periodDays))
+func (s *AnalyticsService) calculateMonthlyCost(cost models.Money, periodDays int) models.Money {
+	// Average days in a month is 30.44
+	// To avoid float calculations, multiply by 3044 and divide by 100 * periodDays
+	totalCents := cost.Cents()
+	monthlyCents := (totalCents * 3044) / (100 * periodDays)
+	
+	return models.NewMoney(monthlyCents)
 }

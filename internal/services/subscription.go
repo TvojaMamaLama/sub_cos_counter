@@ -23,7 +23,7 @@ func (s *SubscriptionService) CreateSubscription(ctx context.Context, req *model
 	if req.Name == "" {
 		return nil, fmt.Errorf("subscription name is required")
 	}
-	if req.Cost <= 0 {
+	if !req.Cost.IsPositive() {
 		return nil, fmt.Errorf("subscription cost must be positive")
 	}
 	if req.PeriodDays <= 0 {

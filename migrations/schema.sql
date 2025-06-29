@@ -2,7 +2,7 @@
 CREATE TABLE subscriptions (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    cost DECIMAL(10,2) NOT NULL,
+    cost INTEGER NOT NULL, -- stored in cents/kopecks
     currency VARCHAR(3) NOT NULL CHECK (currency IN ('USD', 'RUB')),
     period_days INTEGER NOT NULL,
     next_payment DATE NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE subscriptions (
 CREATE TABLE payments (
     id SERIAL PRIMARY KEY,
     subscription_id INTEGER NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
-    amount DECIMAL(10,2) NOT NULL,
+    amount INTEGER NOT NULL, -- stored in cents/kopecks
     currency VARCHAR(3) NOT NULL CHECK (currency IN ('USD', 'RUB')),
     paid_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     status VARCHAR(20) NOT NULL DEFAULT 'completed' CHECK (status IN ('completed', 'pending', 'failed')),
