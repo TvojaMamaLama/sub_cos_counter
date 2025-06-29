@@ -136,8 +136,22 @@ jobs:
           
           if ! command -v docker-compose &> /dev/null && [ ! -f /usr/local/bin/docker-compose ]; then
             echo "Installing Docker Compose..."
-            curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            chmod +x /usr/local/bin/docker-compose
+            
+            # Try installing via curl first
+            if curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose; then
+              chmod +x /usr/local/bin/docker-compose
+              echo "Docker Compose installed via curl"
+            else
+              # Fallback to apt installation
+              echo "curl failed, trying apt installation..."
+              apt-get update
+              apt-get install -y docker-compose-plugin
+              # Create alias for docker-compose command
+              echo '#!/bin/bash' > /usr/local/bin/docker-compose
+              echo 'docker compose "$@"' >> /usr/local/bin/docker-compose
+              chmod +x /usr/local/bin/docker-compose
+            fi
+            
             # Create symlink for easier access
             ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
             # Update PATH for current session
@@ -147,11 +161,20 @@ jobs:
           # Verify installations
           echo "Docker version:"
           docker --version
-          echo "Docker Compose version:"
-          /usr/local/bin/docker-compose --version
           
-          # Set docker-compose path
-          DOCKER_COMPOSE="/usr/local/bin/docker-compose"
+          # Check if docker-compose is available
+          if [ -f /usr/local/bin/docker-compose ]; then
+            echo "Docker Compose found at /usr/local/bin/docker-compose"
+            /usr/local/bin/docker-compose --version
+            DOCKER_COMPOSE="/usr/local/bin/docker-compose"
+          elif command -v docker-compose &> /dev/null; then
+            echo "Docker Compose found in PATH"
+            docker-compose --version
+            DOCKER_COMPOSE="docker-compose"
+          else
+            echo "ERROR: Docker Compose not found!"
+            exit 1
+          fi
           
           # Stop existing containers
           $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml --env-file .env down || true
@@ -177,16 +200,11 @@ jobs:
           # Cleanup
           rm -f /tmp/deployment.tar.gz
           
-          echo "Deployment completed successfully!"
-        EOF
-    
-    - name: Verify deployment
-      run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
-          cd /opt/subscription-bot
+          echo "Waiting for services to start..."
+          sleep 15
           
-          # Set docker-compose path
-          DOCKER_COMPOSE="/usr/local/bin/docker-compose"
+          # Verify deployment in same session
+          echo "=== Deployment Verification ==="
           
           # Check if containers are running
           if $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml ps | grep -q "Up"; then
@@ -207,6 +225,8 @@ jobs:
             $DOCKER_COMPOSE -f deployment/docker/docker-compose.yml logs --tail=20
             exit 1
           fi
+          
+          echo "Deployment completed successfully!"
         EOF
 
   notify:
