@@ -36,7 +36,7 @@ func (s *AnalyticsService) GetCurrentMonthCategoryAnalytics(ctx context.Context)
 	now := time.Now()
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	endOfMonth := startOfMonth.AddDate(0, 1, -1).Add(23*time.Hour + 59*time.Minute + 59*time.Second)
-	
+
 	return s.GetCategoryAnalytics(ctx, startOfMonth, endOfMonth)
 }
 
@@ -88,6 +88,6 @@ func (s *AnalyticsService) calculateMonthlyCost(cost models.Money, periodDays in
 	// To avoid float calculations, multiply by 3044 and divide by 100 * periodDays
 	totalCents := cost.Cents()
 	monthlyCents := (totalCents * 3044) / (100 * periodDays)
-	
+
 	return models.NewMoney(monthlyCents)
 }

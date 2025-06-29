@@ -23,7 +23,7 @@ func main() {
 	}
 
 	// Log configuration info
-	log.Printf("Starting %s v%s in %s mode", 
+	log.Printf("Starting %s v%s in %s mode",
 		cfg.App.Name, cfg.App.Version, cfg.App.Environment)
 
 	if cfg.IsDebugMode() {
@@ -36,7 +36,7 @@ func main() {
 
 	// Connect to database
 	ctx := context.Background()
-	
+
 	// Create connection pool configuration
 	poolConfig, err := pgxpool.ParseConfig(cfg.GetDatabaseURL())
 	if err != nil {
@@ -82,25 +82,25 @@ func main() {
 	go func() {
 		sig := <-c
 		log.Printf("Received signal %v, shutting down gracefully...", sig)
-		
+
 		// Give some time for cleanup
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		// Stop bot
 		telegramBot.Stop()
-		
+
 		// Close database connections
 		dbPool.Close()
-		
+
 		log.Println("Shutdown complete")
-		
+
 		select {
 		case <-shutdownCtx.Done():
 			log.Println("Shutdown timeout exceeded")
 		default:
 		}
-		
+
 		os.Exit(0)
 	}()
 
@@ -110,6 +110,6 @@ func main() {
 		log.Println("Bot is running in development mode")
 		log.Printf("Send /start to the bot to begin!")
 	}
-	
+
 	telegramBot.Start()
 }

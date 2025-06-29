@@ -22,11 +22,11 @@ type UserState struct {
 }
 
 const (
-	StateIdle                = "idle"
-	StateAddingSubscription  = "adding_subscription"
-	StateWaitingForName      = "waiting_for_name"
-	StateWaitingForCost      = "waiting_for_cost"
-	StateWaitingForDate      = "waiting_for_date"
+	StateIdle               = "idle"
+	StateAddingSubscription = "adding_subscription"
+	StateWaitingForName     = "waiting_for_name"
+	StateWaitingForCost     = "waiting_for_cost"
+	StateWaitingForDate     = "waiting_for_date"
 )
 
 func NewBot(cfg *config.Config, subscriptionService *services.SubscriptionService, analyticsService *services.AnalyticsService) (*Bot, error) {
@@ -47,6 +47,16 @@ func NewBot(cfg *config.Config, subscriptionService *services.SubscriptionServic
 		userStates:          make(map[int64]*UserState),
 	}
 
+	// Add debugging middleware
+	b.bot.Use(func(next telebot.HandlerFunc) telebot.HandlerFunc {
+		return func(c telebot.Context) error {
+			if c.Callback() != nil {
+				log.Printf("DEBUG: Callback received - Data: %s, From: %d", c.Callback().Data, c.Sender().ID)
+			}
+			return next(c)
+		}
+	})
+
 	b.setupHandlers()
 	return b, nil
 }
@@ -64,7 +74,7 @@ func (b *Bot) getUserState(userID int64) *UserState {
 	if state, exists := b.userStates[userID]; exists {
 		return state
 	}
-	
+
 	state := &UserState{
 		State: StateIdle,
 		Data:  make(map[string]interface{}),

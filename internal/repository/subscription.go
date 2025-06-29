@@ -104,7 +104,7 @@ func (r *SubscriptionRepository) Update(ctx context.Context, sub *models.Subscri
 
 func (r *SubscriptionRepository) Delete(ctx context.Context, id int) error {
 	query := `UPDATE subscriptions SET active = false, updated_at = NOW() WHERE id = $1`
-	
+
 	_, err := r.db.Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete subscription: %w", err)

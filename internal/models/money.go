@@ -23,20 +23,20 @@ func NewMoneyFromDollarsAndCents(dollars, cents int) Money {
 // ParseMoney parses a string like "15.99" into Money (stored as cents)
 func ParseMoney(str string) (Money, error) {
 	str = strings.TrimSpace(str)
-	
+
 	// Replace comma with dot for international support
 	str = strings.Replace(str, ",", ".", 1)
-	
+
 	parts := strings.Split(str, ".")
 	if len(parts) > 2 {
 		return Money(0), fmt.Errorf("invalid money format: %s", str)
 	}
-	
+
 	dollars, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return Money(0), fmt.Errorf("invalid dollars: %s", parts[0])
 	}
-	
+
 	cents := 0
 	if len(parts) == 2 {
 		centStr := parts[1]
@@ -48,13 +48,13 @@ func ParseMoney(str string) (Money, error) {
 		if len(centStr) == 1 {
 			centStr += "0"
 		}
-		
+
 		cents, err = strconv.Atoi(centStr)
 		if err != nil {
 			return Money(0), fmt.Errorf("invalid cents: %s", centStr)
 		}
 	}
-	
+
 	return NewMoneyFromDollarsAndCents(dollars, cents), nil
 }
 
@@ -107,7 +107,7 @@ func (m *Money) Scan(value interface{}) error {
 		*m = Money(0)
 		return nil
 	}
-	
+
 	switch v := value.(type) {
 	case int64:
 		*m = Money(v)
@@ -118,6 +118,6 @@ func (m *Money) Scan(value interface{}) error {
 	default:
 		return fmt.Errorf("cannot scan %T into Money", value)
 	}
-	
+
 	return nil
 }

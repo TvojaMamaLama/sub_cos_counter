@@ -10,13 +10,13 @@ import (
 type Config struct {
 	// Application settings
 	App AppConfig `mapstructure:"app"`
-	
+
 	// Telegram Bot settings
 	Telegram TelegramConfig `mapstructure:"telegram"`
-	
+
 	// Database settings
 	Database DatabaseConfig `mapstructure:"database"`
-	
+
 	// Logging settings
 	Logging LoggingConfig `mapstructure:"logging"`
 }
@@ -69,7 +69,7 @@ func Load() (*Config, error) {
 	viper.AutomaticEnv()
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.SetEnvPrefix("") // No prefix, use direct env var names
-	
+
 	// Bind environment variables explicitly
 	viper.BindEnv("telegram.bot_token", "TELEGRAM_BOT_TOKEN")
 	viper.BindEnv("database.url", "DATABASE_URL")
@@ -126,7 +126,7 @@ func setDefaults() {
 	viper.SetDefault("database.user", "postgres")
 	viper.SetDefault("database.ssl_mode", "disable")
 	viper.SetDefault("database.max_connections", 25)
-	viper.SetDefault("database.max_idle_time", 15) // minutes
+	viper.SetDefault("database.max_idle_time", 15)     // minutes
 	viper.SetDefault("database.conn_max_lifetime", 60) // minutes
 
 	// Logging defaults

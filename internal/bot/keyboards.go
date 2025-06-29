@@ -4,12 +4,12 @@ import "gopkg.in/telebot.v3"
 
 // Main menu buttons
 var (
-	btnAddSubscription  = telebot.InlineButton{Unique: "add_sub", Text: "📝 Добавить подписку"}
-	btnMySubscriptions  = telebot.InlineButton{Unique: "my_subs", Text: "📋 Мои подписки"}
-	btnMonthlyExpense   = telebot.InlineButton{Unique: "monthly", Text: "💰 Месячные расходы"}
-	btnAnalytics        = telebot.InlineButton{Unique: "analytics", Text: "📊 Аналитика"}
-	btnHistory          = telebot.InlineButton{Unique: "history", Text: "📜 История платежей"}
-	btnSettings         = telebot.InlineButton{Unique: "settings", Text: "⚙️ Настройки"}
+	btnAddSubscription = telebot.InlineButton{Unique: "add_sub", Text: "📝 Добавить подписку"}
+	btnMySubscriptions = telebot.InlineButton{Unique: "my_subs", Text: "📋 Мои подписки"}
+	btnMonthlyExpense  = telebot.InlineButton{Unique: "monthly", Text: "💰 Месячные расходы"}
+	btnAnalytics       = telebot.InlineButton{Unique: "analytics", Text: "📊 Аналитика"}
+	btnHistory         = telebot.InlineButton{Unique: "history", Text: "📜 История платежей"}
+	btnSettings        = telebot.InlineButton{Unique: "settings", Text: "⚙️ Настройки"}
 )
 
 // Category buttons

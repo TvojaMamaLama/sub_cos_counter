@@ -52,7 +52,7 @@ func (b *Bot) handleMySubscriptions(c telebot.Context) error {
 			Unique: fmt.Sprintf("delete_%d", sub.ID),
 			Text:   fmt.Sprintf("❌ Удалить %s", sub.Name),
 		}
-		
+
 		// Register handlers for these specific buttons
 		b.bot.Handle(&payBtn, b.handlePaySubscription)
 		b.bot.Handle(&deleteBtn, b.handleDeleteSubscription)
@@ -142,7 +142,7 @@ func (b *Bot) handleDeleteSubscription(c telebot.Context) error {
 
 func (b *Bot) handleMonthlyExpense(c telebot.Context) error {
 	ctx := context.Background()
-	
+
 	// Get current month expenses
 	currentExpenses, err := b.analyticsService.GetCurrentMonthExpense(ctx)
 	if err != nil {
@@ -156,7 +156,7 @@ func (b *Bot) handleMonthlyExpense(c telebot.Context) error {
 	}
 
 	text := "💰 *Месячные расходы*\n\n"
-	
+
 	// Current month actual expenses
 	text += "📊 *Оплачено в этом месяце:*\n"
 	if len(currentExpenses) == 0 {
@@ -201,7 +201,7 @@ func (b *Bot) handleAnalytics(c telebot.Context) error {
 	}
 
 	text := "📊 *Аналитика по категориям*\n\n"
-	
+
 	if len(analytics) == 0 {
 		text += "Нет данных за текущий месяц"
 	} else {
@@ -233,7 +233,7 @@ func (b *Bot) handleHistory(c telebot.Context) error {
 	}
 
 	text := "📜 *История платежей*\n\n"
-	
+
 	if len(payments) == 0 {
 		text += "История платежей пуста"
 	} else {
@@ -242,7 +242,7 @@ func (b *Bot) handleHistory(c telebot.Context) error {
 			if payment.Currency == models.CurrencyRUB {
 				currencySymbol = "₽"
 			}
-			
+
 			statusIcon := "✅"
 			switch payment.Status {
 			case models.PaymentStatusPending:
@@ -250,7 +250,7 @@ func (b *Bot) handleHistory(c telebot.Context) error {
 			case models.PaymentStatusFailed:
 				statusIcon = "❌"
 			}
-			
+
 			text += fmt.Sprintf("%s %s%s - %s\n",
 				statusIcon, payment.Amount.String(), currencySymbol, payment.PaidAt.Format("02.01.2006 15:04"))
 		}
