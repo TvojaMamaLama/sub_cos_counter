@@ -37,7 +37,7 @@ jobs:
         context: .
         file: deployment/docker/Dockerfile
         push: true
-        tags: ghcr.io/${{ github.repository }}:latest
+        tags: ghcr.io/${{ github.repository_owner }}/sub_cos_counter:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -59,12 +59,12 @@ jobs:
           cd /opt/subscription-bot
           git pull origin main
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker pull ghcr.io/${{ github.repository }}:latest
+          docker pull ghcr.io/${{ github.repository_owner }}/sub_cos_counter:latest
           docker-compose -f deployment/docker/docker-compose.yml down || true
           cat > deployment/docker/docker-compose.registry.yml << EOF
           services:
             bot:
-              image: ghcr.io/${{ github.repository }}:latest
+              image: ghcr.io/${{ github.repository_owner }}/sub_cos_counter:latest
               build: null
           EOF
           docker-compose -f deployment/docker/docker-compose.yml -f deployment/docker/docker-compose.registry.yml up -d
