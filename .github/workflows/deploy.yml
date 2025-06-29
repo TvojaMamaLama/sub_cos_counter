@@ -93,21 +93,23 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [test, build]
-    if: github.ref == 'refs/heads/main' && secrets.SERVER_HOST != ''
+    if: github.ref == 'refs/heads/main'
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
     
-    - name: Check deployment secrets
+    - name: Check deployment readiness
       run: |
         if [ -z "${{ secrets.SERVER_HOST }}" ]; then
-          echo "⚠️ SERVER_HOST secret not configured. Skipping deployment."
-          echo "Please configure deployment secrets as described in CICD_SETUP.md"
-          exit 0
+          echo "⚠️ SERVER_HOST secret not configured. Deployment will be skipped."
+          echo "Configure deployment secrets as described in CICD_SETUP.md to enable auto-deployment"
+        else
+          echo "✅ Deployment secrets configured. Proceeding with deployment..."
         fi
     
     - name: Deploy to production
+      if: ${{ secrets.SERVER_HOST != '' }}
       uses: appleboy/ssh-action@v1.0.0
       with:
         host: ${{ secrets.SERVER_HOST }}
