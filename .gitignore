@@ -19,6 +19,8 @@ go.work
 config.yaml
 config.yml
 config.local.yaml
+# Allow .env.production template
+!.env.production
 
 # IDE files
 .vscode/
