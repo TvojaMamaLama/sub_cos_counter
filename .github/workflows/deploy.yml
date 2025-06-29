@@ -52,20 +52,24 @@ jobs:
     
     - name: Create deployment archive
       run: |
-        tar -czf deployment.tar.gz \
+        tar -czf /tmp/deployment.tar.gz \
           --exclude='.git' \
           --exclude='*.tar.gz' \
           --exclude='logs' \
           --exclude='.env' \
-          .
+          --exclude='node_modules' \
+          --exclude='.github' \
+          --exclude='*.log' \
+          --exclude='backups' \
+          -C . .
     
     - name: Copy files to server
       run: |
-        scp deployment.tar.gz ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/
+        scp -o StrictHostKeyChecking=no /tmp/deployment.tar.gz ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/tmp/
     
     - name: Deploy on server
       run: |
-        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           set -e
           
           # Variables
@@ -161,7 +165,7 @@ jobs:
     
     - name: Verify deployment
       run: |
-        ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           cd /opt/subscription-bot
           
           # Check if containers are running
