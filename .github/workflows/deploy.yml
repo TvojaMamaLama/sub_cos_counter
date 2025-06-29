@@ -108,12 +108,26 @@ jobs:
           echo "Environment variables set:"
           grep -E "^[A-Z_]+=.*" .env | cut -d'=' -f1 | sort
           
-          # Install Docker and Docker Compose via apt (simple!)
-          echo "Installing Docker and Docker Compose via apt..."
-          apt-get update
-          apt-get install -y docker.io docker-compose
-          systemctl start docker
-          systemctl enable docker
+          # Install Docker and Docker Compose if needed
+          if ! command -v docker &> /dev/null; then
+            echo "Installing Docker..."
+            apt-get update
+            apt-get remove -y containerd containerd.io runc || true
+            apt-get install -y docker.io
+            systemctl start docker
+            systemctl enable docker
+          else
+            echo "Docker already installed"
+            systemctl start docker || true
+          fi
+          
+          if ! command -v docker-compose &> /dev/null; then
+            echo "Installing Docker Compose..."
+            apt-get update
+            apt-get install -y docker-compose
+          else
+            echo "Docker Compose already installed"
+          fi
           
           # Verify installations
           echo "Docker version:"
