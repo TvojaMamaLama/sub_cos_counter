@@ -77,22 +77,23 @@ jobs:
           BACKUP_DIR="/opt/subscription-bot-backup-$(date +%Y%m%d-%H%M%S)"
           
           # Create app directory if it doesn't exist
-          sudo mkdir -p $APP_DIR
+          mkdir -p $APP_DIR
+          mkdir -p $(dirname $BACKUP_DIR)
           
           # Backup current deployment if it exists
           if [ -d "$APP_DIR" ] && [ "$(ls -A $APP_DIR)" ]; then
             echo "Creating backup..."
-            sudo cp -r $APP_DIR $BACKUP_DIR
+            cp -r $APP_DIR $BACKUP_DIR
           fi
           
           # Extract new deployment
           cd $APP_DIR
-          sudo rm -rf * .github .gitignore || true
-          sudo tar -xzf /tmp/deployment.tar.gz -C .
-          sudo chown -R root:root .
+          rm -rf * .github .gitignore || true
+          tar -xzf /tmp/deployment.tar.gz -C .
+          chown -R root:root .
           
           # Create production environment file
-          sudo tee .env > /dev/null << 'ENVEOF'
+          tee .env > /dev/null << 'ENVEOF'
           # Production Environment Variables
           TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_ALLOWED_USER=${{ secrets.TELEGRAM_ALLOWED_USER }}
@@ -124,26 +125,37 @@ jobs:
           # Install Docker and Docker Compose if not installed
           if ! command -v docker &> /dev/null; then
             echo "Installing Docker..."
+            apt-get update
+            apt-get install -y ca-certificates curl
             curl -fsSL https://get.docker.com -o get-docker.sh
-            sudo sh get-docker.sh
-            sudo systemctl start docker
-            sudo systemctl enable docker
+            sh get-docker.sh
+            systemctl start docker
+            systemctl enable docker
+            usermod -aG docker root
           fi
           
           if ! command -v docker-compose &> /dev/null; then
             echo "Installing Docker Compose..."
-            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-            sudo chmod +x /usr/local/bin/docker-compose
+            curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            chmod +x /usr/local/bin/docker-compose
+            # Create symlink for easier access
+            ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
           fi
           
+          # Verify installations
+          echo "Docker version:"
+          docker --version
+          echo "Docker Compose version:"
+          docker-compose --version
+          
           # Stop existing containers
-          sudo docker-compose -f deployment/docker/docker-compose.yml --env-file .env down || true
+          docker-compose -f deployment/docker/docker-compose.yml --env-file .env down || true
           
           # Pull latest images and rebuild
-          sudo docker-compose -f deployment/docker/docker-compose.yml --env-file .env build --no-cache
+          docker-compose -f deployment/docker/docker-compose.yml --env-file .env build --no-cache
           
           # Start services
-          sudo docker-compose -f deployment/docker/docker-compose.yml --env-file .env up -d
+          docker-compose -f deployment/docker/docker-compose.yml --env-file .env up -d
           
           # Wait for database to be ready
           echo "Waiting for database..."
@@ -151,11 +163,11 @@ jobs:
           
           # Check if services are running
           echo "Checking service status..."
-          sudo docker-compose -f deployment/docker/docker-compose.yml ps
+          docker-compose -f deployment/docker/docker-compose.yml ps
           
           # Show logs
           echo "Recent logs:"
-          sudo docker-compose -f deployment/docker/docker-compose.yml logs --tail=20
+          docker-compose -f deployment/docker/docker-compose.yml logs --tail=20
           
           # Cleanup
           rm -f /tmp/deployment.tar.gz
@@ -169,22 +181,22 @@ jobs:
           cd /opt/subscription-bot
           
           # Check if containers are running
-          if sudo docker-compose -f deployment/docker/docker-compose.yml ps | grep -q "Up"; then
+          if docker-compose -f deployment/docker/docker-compose.yml ps | grep -q "Up"; then
             echo "✅ Deployment verification successful - containers are running"
             
             # Show container status
             echo "Container status:"
-            sudo docker-compose -f deployment/docker/docker-compose.yml ps
+            docker-compose -f deployment/docker/docker-compose.yml ps
             
             # Show recent logs
             echo "Recent bot logs:"
-            sudo docker-compose -f deployment/docker/docker-compose.yml logs --tail=10 bot
+            docker-compose -f deployment/docker/docker-compose.yml logs --tail=10 bot
           else
             echo "❌ Deployment verification failed - containers are not running"
             echo "Container status:"
-            sudo docker-compose -f deployment/docker/docker-compose.yml ps
+            docker-compose -f deployment/docker/docker-compose.yml ps
             echo "Error logs:"
-            sudo docker-compose -f deployment/docker/docker-compose.yml logs --tail=20
+            docker-compose -f deployment/docker/docker-compose.yml logs --tail=20
             exit 1
           fi
         EOF
