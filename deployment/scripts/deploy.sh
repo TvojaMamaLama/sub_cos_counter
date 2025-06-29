@@ -86,7 +86,14 @@ deploy() {
     
     # Stop existing services
     log "Stopping existing services..."
-    docker-compose -f $COMPOSE_FILE -f $COMPOSE_PROD down
+    docker-compose -f $COMPOSE_FILE -f $COMPOSE_PROD down --remove-orphans
+    
+    # Force remove conflicting containers if they exist
+    log "Cleaning up any conflicting containers..."
+    docker rm -f subscription-bot-db subscription-bot subscription-bot-atlas 2>/dev/null || true
+    
+    # Remove conflicting networks if they exist
+    docker network rm docker_subscription-bot-network 2>/dev/null || true
     
     # Start services
     log "Starting services..."
